@@ -113,6 +113,12 @@ def load_config(config_path: str = None) -> dict:
     if env_embed_model:
         config.setdefault("embedding", {})["model"] = env_embed_model
 
+    # OMBRE_EMBEDDING_API_KEY overrides embedding.api_key.
+    # If unset, embedding_engine falls back to dehydration.api_key for backward compatibility.
+    env_embed_api_key = os.environ.get("OMBRE_EMBEDDING_API_KEY", "")
+    if env_embed_api_key:
+        config.setdefault("embedding", {})["api_key"] = env_embed_api_key
+
     # OMBRE_EMBEDDING_BASE_URL overrides embedding.base_url
     env_embed_base_url = os.environ.get("OMBRE_EMBEDDING_BASE_URL", "")
     if env_embed_base_url:

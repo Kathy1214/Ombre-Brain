@@ -13,12 +13,13 @@
 | `OMBRE_DEHYDRATION_MODEL` | 否 | `deepseek-chat` | 脱水/打标/合并/拆分用的 LLM 模型名（覆盖 `dehydration.model`） |
 | `OMBRE_DEHYDRATION_BASE_URL` | 否 | `https://api.deepseek.com/v1` | 脱水模型的 API Base URL（覆盖 `dehydration.base_url`） |
 | `OMBRE_MODEL` | 否 | — | `OMBRE_DEHYDRATION_MODEL` 的别名（前者优先） |
+| `OMBRE_EMBEDDING_API_KEY` | 否 | — | 向量嵌入 API Key（覆盖 `embedding.api_key`；留空则复用 `OMBRE_API_KEY`） |
 | `OMBRE_EMBEDDING_MODEL` | 否 | `gemini-embedding-001` | 向量嵌入模型名（覆盖 `embedding.model`） |
 | `OMBRE_EMBEDDING_BASE_URL` | 否 | — | 向量嵌入的 API Base URL（覆盖 `embedding.base_url`；留空则复用脱水配置） |
 
 ## 说明
 
-- `OMBRE_API_KEY` 也可在 `config.yaml` 的 `dehydration.api_key` / `embedding.api_key` 中设置，但**强烈建议**通过环境变量传入，避免密钥写入文件。
+- `OMBRE_API_KEY` 也可在 `config.yaml` 的 `dehydration.api_key` 中设置；`OMBRE_EMBEDDING_API_KEY` 也可在 `config.yaml` 的 `embedding.api_key` 中设置。但**强烈建议**通过环境变量传入，避免密钥写入文件。
 - `OMBRE_DASHBOARD_PASSWORD` 设置后，Dashboard 的"修改密码"功能将被禁用（显示提示，建议直接修改环境变量）。未设置则密码存储在 `{buckets_dir}/.dashboard_auth.json`（SHA-256 + salt）。
 
 ## Webhook 推送格式 (`OMBRE_HOOK_URL`)

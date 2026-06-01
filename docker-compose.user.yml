@@ -24,9 +24,11 @@ services:
       # 如使用 Gemini 而非 DeepSeek，在 .env 里加：
       #   OMBRE_DEHYDRATION_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai/
       #   OMBRE_DEHYDRATION_MODEL=gemini-2.5-flash-lite
+      #   OMBRE_EMBEDDING_API_KEY=your-gemini-key
       #   OMBRE_EMBEDDING_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai/
       - OMBRE_DEHYDRATION_BASE_URL=${OMBRE_DEHYDRATION_BASE_URL:-}
       - OMBRE_DEHYDRATION_MODEL=${OMBRE_DEHYDRATION_MODEL:-}
+      - OMBRE_EMBEDDING_API_KEY=${OMBRE_EMBEDDING_API_KEY:-}
       - OMBRE_EMBEDDING_BASE_URL=${OMBRE_EMBEDDING_BASE_URL:-}
       - OMBRE_EMBEDDING_MODEL=${OMBRE_EMBEDDING_MODEL:-}
     volumes:

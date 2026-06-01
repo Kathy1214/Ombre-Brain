@@ -622,6 +622,9 @@ Dashboard：浏览器打开 `http://localhost:8000/dashboard`
 2. **设置环境变量 / Set environment variables**（服务页面 → **Variables** 标签页）
    - `OMBRE_API_KEY`（**必需**）— LLM API 密钥；未设置时 hold/grow/dream 会报错
    - `OMBRE_BASE_URL`（可选）— API 地址，如 `https://api.deepseek.com/v1`
+   - `OMBRE_EMBEDDING_API_KEY`（可选）— 单独的向量化 API Key；如脱水用 DeepSeek、向量化用 Gemini 时请设置
+   - `OMBRE_EMBEDDING_BASE_URL`（可选）— 向量化 API 地址，如 `https://generativelanguage.googleapis.com/v1beta/openai/`
+   - `OMBRE_EMBEDDING_MODEL`（可选）— 向量化模型，如 `gemini-embedding-001`
 
    > ⚠️ **不需要**手动设置 `OMBRE_TRANSPORT` 和 `OMBRE_BUCKETS_DIR`，Dockerfile 里已经设好了默认值。Zeabur 对单阶段 Dockerfile 会自动注入控制台设置的环境变量。
    > You do **NOT** need to set `OMBRE_TRANSPORT` or `OMBRE_BUCKETS_DIR` — defaults are baked into the Dockerfile. Zeabur auto-injects dashboard env vars for single-stage Dockerfiles.
