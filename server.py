@@ -1314,7 +1314,104 @@ async def api_bucket_detail(request):
         "id": bucket["id"],
         "metadata": meta,
         "content": strip_wikilinks(bucket.get("content", "")),
+        "content_raw": bucket.get("content", ""),
         "score": decay_engine.calculate_score(meta),
+    })
+
+
+@mcp.custom_route("/api/bucket/{bucket_id}", methods=["PUT"])
+async def api_bucket_update(request):
+    """Update bucket content and editable metadata from the Dashboard."""
+    from starlette.responses import JSONResponse
+    err = _require_auth(request)
+    if err: return err
+
+    bucket_id = request.path_params["bucket_id"]
+    bucket = await bucket_mgr.get(bucket_id)
+    if not bucket:
+        return JSONResponse({"error": "not found"}, status_code=404)
+
+    try:
+        body = await request.json()
+    except Exception:
+        return JSONResponse({"error": "invalid JSON"}, status_code=400)
+
+    updates = {}
+
+    if "content" in body:
+        content = str(body.get("content") or "")
+        if not content.strip():
+            return JSONResponse({"error": "content cannot be empty"}, status_code=400)
+        updates["content"] = content
+
+    if "name" in body:
+        name = str(body.get("name") or "").strip()
+        if name:
+            updates["name"] = name
+
+    if "domain" in body:
+        domain = body.get("domain")
+        if isinstance(domain, str):
+            domain = [d.strip() for d in domain.split(",") if d.strip()]
+        elif isinstance(domain, list):
+            domain = [str(d).strip() for d in domain if str(d).strip()]
+        else:
+            domain = []
+        updates["domain"] = domain or ["未分类"]
+
+    if "tags" in body:
+        tags = body.get("tags")
+        if isinstance(tags, str):
+            tags = [t.strip() for t in tags.split(",") if t.strip()]
+        elif isinstance(tags, list):
+            tags = [str(t).strip() for t in tags if str(t).strip()]
+        else:
+            tags = []
+        updates["tags"] = tags
+
+    for key in ("valence", "arousal", "model_valence"):
+        if key in body and body.get(key) not in (None, ""):
+            try:
+                updates[key] = max(0.0, min(1.0, float(body[key])))
+            except (TypeError, ValueError):
+                return JSONResponse({"error": f"invalid {key}"}, status_code=400)
+
+    if "importance" in body and body.get("importance") not in (None, ""):
+        try:
+            updates["importance"] = max(1, min(10, int(body["importance"])))
+        except (TypeError, ValueError):
+            return JSONResponse({"error": "invalid importance"}, status_code=400)
+
+    for key in ("resolved", "pinned", "digested"):
+        if key in body:
+            updates[key] = bool(body[key])
+
+    if not updates:
+        return JSONResponse({"error": "no updates"}, status_code=400)
+
+    success = await bucket_mgr.update(bucket_id, **updates)
+    if not success:
+        return JSONResponse({"error": "update failed"}, status_code=500)
+
+    if "content" in updates:
+        try:
+            await embedding_engine.generate_and_store(bucket_id, updates["content"])
+        except Exception as e:
+            logger.warning(f"Dashboard bucket update embedding refresh failed: {bucket_id}: {e}")
+
+    updated_bucket = await bucket_mgr.get(bucket_id)
+    meta = updated_bucket.get("metadata", {}) if updated_bucket else {}
+    return JSONResponse({
+        "ok": True,
+        "id": bucket_id,
+        "updated": list(updates.keys()),
+        "bucket": {
+            "id": bucket_id,
+            "metadata": meta,
+            "content": strip_wikilinks(updated_bucket.get("content", "")) if updated_bucket else "",
+            "content_raw": updated_bucket.get("content", "") if updated_bucket else "",
+            "score": decay_engine.calculate_score(meta) if updated_bucket else 0,
+        },
     })
 
 
