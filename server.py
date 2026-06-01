@@ -1319,7 +1319,7 @@ async def api_bucket_detail(request):
     })
 
 
-@mcp.custom_route("/api/bucket/{bucket_id}", methods=["PUT"])
+@mcp.custom_route("/api/bucket/{bucket_id}/edit", methods=["POST"])
 async def api_bucket_update(request):
     """Update bucket content and editable metadata from the Dashboard."""
     from starlette.responses import JSONResponse

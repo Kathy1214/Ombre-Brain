@@ -1349,8 +1349,8 @@ async function saveDetailEdit() {
   if (modelValence !== '') body.model_valence = modelValence;
 
   try {
-    var res = await fetch(BASE + '/api/bucket/' + currentDetailBucket.id, {
-      method: 'PUT',
+    var res = await fetch(BASE + '/api/bucket/' + currentDetailBucket.id + '/edit', {
+      method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify(body),
     });
