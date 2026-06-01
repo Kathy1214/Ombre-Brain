@@ -452,18 +452,9 @@ class Dehydrator:
         Parse and validate API tagging result.
         解析并校验 API 返回的打标结果。
         """
-        try:
-            # Handle potential markdown code block wrapping
-            # 处理可能的 markdown 代码块包裹
-            cleaned = raw.strip()
-            if cleaned.startswith("```"):
-                cleaned = cleaned.split("\n", 1)[-1].rsplit("```", 1)[0]
-            result = json.loads(cleaned)
-        except (json.JSONDecodeError, IndexError, ValueError):
-            logger.warning(f"API tagging JSON parse failed / JSON 解析失败: {raw[:200]}")
-            return self._default_analysis()
-
+        result = self._extract_json(raw, expected=dict)
         if not isinstance(result, dict):
+            logger.warning(f"API tagging JSON parse failed / JSON 解析失败: {raw[:200]}")
             return self._default_analysis()
 
         # --- Validate and clamp value ranges / 校验并钳制数值范围 ---
@@ -561,16 +552,16 @@ class Dehydrator:
         Parse and validate API diary digest result.
         解析并校验 API 返回的日记整理结果。
         """
-        try:
-            cleaned = raw.strip()
-            if cleaned.startswith("```"):
-                cleaned = cleaned.split("\n", 1)[-1].rsplit("```", 1)[0]
-            items = json.loads(cleaned)
-        except (json.JSONDecodeError, IndexError, ValueError):
-            logger.warning(f"Diary digest JSON parse failed / JSON 解析失败: {raw[:200]}")
-            return []
+        items = self._extract_json(raw, expected=list)
+        if isinstance(items, dict):
+            for key in ("items", "memories", "entries", "results", "data"):
+                value = items.get(key)
+                if isinstance(value, list):
+                    items = value
+                    break
 
         if not isinstance(items, list):
+            logger.warning(f"Diary digest JSON parse failed / JSON 解析失败: {raw[:200]}")
             return []
 
         validated = []
@@ -597,3 +588,49 @@ class Dehydrator:
                 "importance": importance,
             })
         return validated
+
+    def _extract_json(self, raw: str, expected=None):
+        """
+        Extract JSON even when a model wraps it in prose or markdown fences.
+        即使模型在 JSON 前后加说明文字或代码块，也尽量抽取 JSON。
+        """
+        if not raw:
+            return None
+
+        text = raw.strip()
+        candidates = [text]
+
+        # Prefer fenced code blocks if present, but do not require the block
+        # to start at the first character.
+        for match in re.finditer(r"```(?:json)?\s*([\s\S]*?)```", text, re.IGNORECASE):
+            candidates.insert(0, match.group(1).strip())
+
+        decoder = json.JSONDecoder()
+        for candidate in candidates:
+            candidate = candidate.strip()
+            if not candidate:
+                continue
+
+            try:
+                parsed = json.loads(candidate)
+                if expected is None or isinstance(parsed, expected):
+                    return parsed
+                if expected is list and isinstance(parsed, dict):
+                    return parsed
+            except (json.JSONDecodeError, TypeError, ValueError):
+                pass
+
+            # Scan for the first decodable JSON object/array inside prose.
+            for idx, ch in enumerate(candidate):
+                if ch not in "[{":
+                    continue
+                try:
+                    parsed, _ = decoder.raw_decode(candidate[idx:])
+                except json.JSONDecodeError:
+                    continue
+                if expected is None or isinstance(parsed, expected):
+                    return parsed
+                if expected is list and isinstance(parsed, dict):
+                    return parsed
+
+        return None
